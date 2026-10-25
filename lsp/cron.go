@@ -69,6 +69,8 @@ func cronjobPrivateTemplateData(uin int64) map[string]interface{} {
 }
 
 func (l *Lsp) CronjobReload() {
+	l.cronReloadMu.Lock()
+	defer l.cronReloadMu.Unlock()
 	for _, entry := range l.cron.Entries() {
 		l.cron.Remove(entry.ID)
 	}
