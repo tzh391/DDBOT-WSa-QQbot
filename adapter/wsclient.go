@@ -650,6 +650,10 @@ func (c *WSClient) SendAndWait(action string, params map[string]any, timeout tim
 		}
 		c.mu.Unlock()
 	}()
+	// OneBot 无参数 API 也发送空对象，避免生成 "params": null
+	if params == nil {
+		params = map[string]any{}
+	}
 	req := map[string]any{"action": action, "params": params, "echo": echo}
 	data, err := json.Marshal(req)
 	if err != nil {
