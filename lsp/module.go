@@ -64,6 +64,7 @@ type Lsp struct {
 	notifyWg      sync.WaitGroup
 	msgLimit      *semaphore.Weighted
 	cron          *cron.Cron
+	cronReloadMu sync.Mutex
 
 	PermissionStateManager *permission.StateManager
 	LspStateManager        *StateManager
