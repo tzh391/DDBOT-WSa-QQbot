@@ -40,3 +40,27 @@ func TestCalcSendTimeoutForTypedMessageSegments(t *testing.T) {
 	assert.Less(t, uriMessageTimeout, time.Minute)
 	assert.Equal(t, defaultTimeout, a.calcSendTimeout("send_group_msg", plainText))
 }
+
+func TestMessageEventsPreserveSenderProfile(t *testing.T) {
+	a := NewOneBotAdapter(&adapter.AdapterConfig{})
+	msg := map[string]interface{}{
+		"user_id": float64(42), "group_id": float64(100),
+		"sender": map[string]interface{}{
+			"user_id": float64(999), "nickname": "事件昵称", "card": "事件名片", "role": "owner",
+		},
+	}
+	group := a.parseGroupMessageEvent(msg)
+	private := a.parsePrivateMessageEvent(msg)
+	for _, sender := range []*adapter.SenderInfo{group.Sender, private.Sender} {
+		if assert.NotNil(t, sender) {
+			assert.Equal(t, int64(42), sender.UserID)
+			assert.Equal(t, int64(42), sender.Uin)
+			assert.Equal(t, "事件昵称", sender.Nickname)
+			assert.Equal(t, "事件名片", sender.Card)
+			assert.Equal(t, "owner", sender.Role)
+		}
+	}
+	delete(msg, "sender")
+	assert.Nil(t, a.parseGroupMessageEvent(msg).Sender)
+	assert.Nil(t, a.parsePrivateMessageEvent(msg).Sender)
+}

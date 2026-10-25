@@ -1598,21 +1598,43 @@ func (m *Messenger) handleRequestEvent(event *RequestEvent) {
 	}
 }
 
+func messageSender(userID int64, incoming *SenderInfo) *SenderInfo {
+	sender := &SenderInfo{}
+	if incoming != nil {
+		*sender = *incoming
+	}
+	sender.UserID = userID
+	sender.Uin = userID
+	return sender
+}
+
 func (m *Messenger) handleGroupMessage(event *GroupMessageEvent) {
 	m.groupMsgCount.Add(1)
 	messengerLogger.Debugf("handleGroupMessage called: group=%d, user=%d, msgID=%d", event.GroupID, event.UserID, event.MessageID)
 
-	sender := &SenderInfo{
-		UserID: event.UserID,
-		Uin:    event.UserID,
-	}
+	sender := messageSender(event.UserID, event.Sender)
 	group := m.FindGroup(event.GroupID)
 	if group != nil {
 		member := group.FindMember(event.UserID)
 		if member != nil {
-			sender.Nickname = member.Nickname
-			sender.Card = member.CardName
+			if sender.Nickname == "" {
+				sender.Nickname = member.Nickname
+			}
+			if sender.Card == "" {
+				sender.Card = member.CardName
+			}
+			if sender.Role == "" {
+				sender.Role = member.Role
+			}
 		}
+	}
+	if sender.DisplayName() == "" {
+		if friend := m.FindFriend(event.UserID); friend != nil {
+			sender.Nickname = friend.Nickname
+		}
+	}
+	if sender.DisplayName() == "" && event.UserID != 0 {
+		sender.Nickname = strconv.FormatInt(event.UserID, 10)
 	}
 
 	elements := ConvertToMessageElements(event.Message)
@@ -1642,14 +1664,21 @@ func (m *Messenger) handleGroupMessage(event *GroupMessageEvent) {
 
 func (m *Messenger) handlePrivateMessage(event *PrivateMessageEvent) {
 	m.privateMsgCount.Add(1)
-	isFriend := m.FindFriend(event.UserID) != nil
-	nickname := ""
-	if !isFriend {
+	sender := messageSender(event.UserID, event.Sender)
+	if sender.Nickname == "" {
+		if friend := m.FindFriend(event.UserID); friend != nil {
+			sender.Nickname = friend.Nickname
+		}
+	}
+	if sender.DisplayName() == "" {
 		if info, err := m.GetStrangerInfo(event.UserID); err == nil {
 			if name, ok := info["nickname"].(string); ok {
-				nickname = name
+				sender.Nickname = name
 			}
 		}
+	}
+	if sender.DisplayName() == "" && event.UserID != 0 {
+		sender.Nickname = strconv.FormatInt(event.UserID, 10)
 	}
 
 	elements := ConvertToMessageElements(event.Message)
@@ -1657,11 +1686,7 @@ func (m *Messenger) handlePrivateMessage(event *PrivateMessageEvent) {
 		ID:     int64(event.MessageID),
 		UserID: event.UserID,
 		Self:   event.SelfID,
-		Sender: &SenderInfo{
-			UserID:   event.UserID,
-			Uin:      event.UserID,
-			Nickname: nickname,
-		},
+		Sender: sender,
 		Time:     event.Time,
 		Elements: elements,
 	}
