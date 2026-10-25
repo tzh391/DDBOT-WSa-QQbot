@@ -1418,6 +1418,8 @@ GetIgnoreExpire: Get配置，忽略key的过期时间，如果key曾经设置过
 | full_args     | string   | 本次命令触发时附带的完整参数（只支持文字） | 从v1.0.8版本开始支持 |
 | template_name | string   | 本次命令触发时的模板名字          | 从v1.0.9版本开始支持 |
 
+OneBot 群聊和私聊命令保留消息事件中的 `sender.nickname`、`sender.card` 和 `sender.role`，缓存只补齐空字段。`.member_name` 优先显示群名片，其次昵称；资料完全缺失时显示数字 ID，避免为空。模板仍可通过 `.msg.Sender.Nickname` / `.msg.Sender.Card` 分别读取昵称和名片，自定义 `/今日运势` 等命令同样适用。
+
 - /签到
 
 模板名：`command.group.checkin.tmpl`

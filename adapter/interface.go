@@ -39,6 +39,7 @@ type GroupMessageEvent struct {
 	Message    []MessageSegment
 	Time       int64
 	SelfID     int64
+	Sender     *SenderInfo
 }
 
 type PrivateMessageEvent struct {
@@ -49,6 +50,7 @@ type PrivateMessageEvent struct {
 	Time       int64
 	SelfID     int64
 	TargetID   int64
+	Sender     *SenderInfo
 }
 
 type MessageSegment struct {

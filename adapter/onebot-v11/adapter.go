@@ -395,6 +395,19 @@ func (a *OneBotAdapter) handleMessageEvent(msg map[string]interface{}) {
 	}
 }
 
+func parseEventSender(userID int64, value interface{}) *adapter.SenderInfo {
+	sender, ok := value.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	return &adapter.SenderInfo{
+		UserID: userID, Uin: userID,
+		Nickname: getString(sender["nickname"]),
+		Card:     getString(sender["card"]),
+		Role:     getString(sender["role"]),
+	}
+}
+
 func (a *OneBotAdapter) parseGroupMessageEvent(msg map[string]interface{}) *adapter.GroupMessageEvent {
 	event := &adapter.GroupMessageEvent{
 		GroupID:    getInt64(msg["group_id"]),
@@ -403,6 +416,7 @@ func (a *OneBotAdapter) parseGroupMessageEvent(msg map[string]interface{}) *adap
 		RawMessage: getString(msg["raw_message"]),
 		Time:       getInt64(msg["time"]),
 		SelfID:     getInt64(msg["self_id"]),
+		Sender:     parseEventSender(getInt64(msg["user_id"]), msg["sender"]),
 	}
 
 	if msg["message"] != nil {
@@ -423,6 +437,7 @@ func (a *OneBotAdapter) parsePrivateMessageEvent(msg map[string]interface{}) *ad
 		Time:       getInt64(msg["time"]),
 		SelfID:     getInt64(msg["self_id"]),
 		TargetID:   getInt64(msg["target_id"]),
+		Sender:     parseEventSender(getInt64(msg["user_id"]), msg["sender"]),
 	}
 
 	if msg["message"] != nil {
