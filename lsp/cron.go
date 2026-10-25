@@ -7,6 +7,7 @@ import (
 	"github.com/cnxysoft/DDBOT-WSa/lsp/cfg"
 	"github.com/cnxysoft/DDBOT-WSa/lsp/mmsg"
 	"github.com/cnxysoft/DDBOT-WSa/lsp/template"
+	localutils "github.com/cnxysoft/DDBOT-WSa/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -39,9 +40,7 @@ func (c *cronjobRun) Run() {
 	go func() {
 		defer wg.Done()
 		for _, uin := range c.Target.Private {
-			m, err := template.LoadAndExec(templateName, map[string]interface{}{
-				"target": uin,
-			})
+			m, err := template.LoadAndExec(templateName, cronjobPrivateTemplateData(uin))
 			if err != nil {
 				cronLog.WithError(err).WithField("template", templateName).
 					Errorf("定时任务模板执行失败 (private=%d)", uin)
@@ -52,6 +51,21 @@ func (c *cronjobRun) Run() {
 		}
 	}()
 	wg.Wait()
+}
+
+// cronjobPrivateTemplateData 为私聊定时模板补充收件人的名称和 QQ 号。
+func cronjobPrivateTemplateData(uin int64) map[string]interface{} {
+	memberName := fmt.Sprintf("%d", uin)
+	if b := localutils.GetBot(); b != nil {
+		if friend := b.FindFriend(uin); friend != nil && friend.Nickname != "" {
+			memberName = friend.Nickname
+		}
+	}
+	return map[string]interface{}{
+		"target":      uin,
+		"member_code": uin,
+		"member_name": memberName,
+	}
 }
 
 func (l *Lsp) CronjobReload() {
